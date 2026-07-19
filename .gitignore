@@ -7,3 +7,4 @@ dist
 Menu02-08-2025.pdf
 *.log
 /tmp
+.vercel

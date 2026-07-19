@@ -53,3 +53,36 @@ export async function deleteItem(id) {
   if (error) throw error
   return data
 }
+
+// ============ SLOT BOOKING SYSTEM ============
+
+export async function fetchSlots() {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('slot_bookings')
+    .select('*')
+    .order('date', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+export async function upsertSlot(row) {
+  if (!supabase) return null
+  const { data, error } = await supabase.from('slot_bookings').upsert(row).select()
+  if (error) throw error
+  return data
+}
+
+export async function deleteSlot(id) {
+  if (!supabase) return null
+  const { data, error } = await supabase.from('slot_bookings').delete().eq('id', id).select()
+  if (error) throw error
+  return data
+}
+
+export async function toggleSlotStatus(id, status) {
+  if (!supabase) return null
+  const { data, error } = await supabase.from('slot_bookings').update({ status }).eq('id', id).select()
+  if (error) throw error
+  return data
+}

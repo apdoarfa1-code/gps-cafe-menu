@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Gamepad2, Sofa, User, Clock, Calendar, ChevronDown, Plus, Minus } from 'lucide-react'
+import { ArrowLeft, Gamepad2, Sofa, User, Clock, Calendar, ChevronDown, Plus, Minus, Ban } from 'lucide-react'
 import { telLink, playstationWhatsApp } from '../lib/whatsapp.js'
+import { useSlotBookings } from '../hooks/useSlotBookings.jsx'
 
 const DAYS = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة']
 const HOURS = Array.from({ length: 12 }, (_, i) => `${i+1}:00 ${i+1 < 12 ? 'م' : 'ص'}`)
 
-function Accordion({ title, icon: Icon, color, value, onChange, options, open, onToggle, placeholder }) {
+function Accordion({ title, icon: Icon, color, value, onChange, options, open, onToggle, placeholder, disabled = [] }) {
   return (
     <div className="glass rounded-2xl overflow-hidden">
       <button onClick={onToggle} className="w-full flex items-center gap-3 p-3.5 text-white/80 hover:text-white transition-colors">
@@ -28,13 +29,22 @@ function Accordion({ title, icon: Icon, color, value, onChange, options, open, o
           <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
             transition={{ duration: 0.25 }} className="overflow-hidden">
             <div className="grid grid-cols-4 gap-2 p-3 pt-0 max-h-44 overflow-auto scrollbar-none">
-              {options.map(opt => (
-                <button key={opt} onClick={() => { onChange(opt); onToggle() }}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all ${value === opt ? 'text-black' : 'text-white/60 bg-white/[0.04] hover:bg-white/[0.08]'}`}
-                  style={value === opt ? { background: color } : {}}>
-                  {opt}
-                </button>
-              ))}
+              {options.map(opt => {
+                const isTaken = disabled.includes(opt)
+                const isSelected = value === opt
+                return (
+                  <button key={opt} disabled={isTaken} onClick={() => { if (!isTaken) { onChange(opt); onToggle() } }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all relative ${
+                      isSelected ? 'text-black' :
+                      isTaken ? 'text-red-400/40 bg-red-500/5 cursor-not-allowed line-through' :
+                      'text-white/60 bg-white/[0.04] hover:bg-white/[0.08]'
+                    }`}
+                    style={isSelected ? { background: color } : isTaken ? { border: '1px dashed rgba(239,68,68,0.2)' } : {}}>
+                    {opt}
+                    {isTaken && <Ban size={9} className="absolute top-1 right-1 text-red-400/50" />}
+                  </button>
+                )
+              })}
             </div>
           </motion.div>
         )}
@@ -43,9 +53,12 @@ function Accordion({ title, icon: Icon, color, value, onChange, options, open, o
   )
 }
 
-function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, setDay, hour, setHour, t, label, placeholder }) {
+function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, setDay, hour, setHour, t, label, placeholder, slotType = 'playstation' }) {
   const [openWhich, setOpenWhich] = useState(null)
   const toggle = (k) => setOpenWhich(openWhich === k ? null : k)
+  const { getBookedForDate } = useSlotBookings()
+  const bookedHours = day ? getBookedForDate(day, slotType).map(s => s.time).filter(Boolean) : []
+  const isHourBooked = hour && bookedHours.includes(hour)
   const wts = playstationWhatsApp({ name, type: title, day, hour })
 
   return (
@@ -80,10 +93,19 @@ function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, 
           className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-4 py-3.5 text-white text-[15px] outline-none focus:border-accent/50 focus:bg-white/[0.06] transition-all placeholder-white/25 font-ar" />
       </div>
 
-      <Accordion title="إيمتي؟ (اليوم)" icon={Calendar} color={accent} value={day} onChange={setDay}
+      <Accordion title="إيمتي؟ (اليوم)" icon={Calendar} color={accent} value={day} onChange={(v) => { setDay(v); setHour('') }}
         options={DAYS} open={openWhich === 'day'} onToggle={() => toggle('day')} placeholder="اختار اليوم" />
       <Accordion title="الساعة كام؟" icon={Clock} color={accent} value={hour} onChange={setHour}
-        options={HOURS} open={openWhich === 'hour'} onToggle={() => toggle('hour')} placeholder="اختار الساعة" />
+        options={HOURS} open={openWhich === 'hour'} onToggle={() => toggle('hour')} placeholder="اختار الساعة"
+        disabled={bookedHours} />
+      <AnimatePresence>
+        {isHourBooked && (
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+            className="glass rounded-xl p-2.5 text-red-400/80 text-xs flex items-center gap-2 border border-red-500/20 font-ar">
+            <Ban size={12} /> الساعة دي محجوزة — اختار ساعة تانية يانجم
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
@@ -132,12 +154,12 @@ export default function PlaystationPage() {
             name={ps.name} setName={(v) => setPs(s => ({ ...s, name: v }))}
             day={ps.day} setDay={(v) => setPs(s => ({ ...s, day: v }))}
             hour={ps.hour} setHour={(v) => setPs(s => ({ ...s, hour: v }))}
-            t={t} label="الاسم" placeholder="اكتب اسمك يانجم" />
+            t={t} label="الاسم" placeholder="اكتب اسمك يانجم" slotType="playstation" />
           <BookingCard icon={Sofa} accent="#ec4899" title={t('roomBooking')} subtitle="VIP · Private"
             name={room.name} setName={(v) => setRoom(s => ({ ...s, name: v }))}
             day={room.day} setDay={(v) => setRoom(s => ({ ...s, day: v }))}
             hour={room.hour} setHour={(v) => setRoom(s => ({ ...s, hour: v }))}
-            t={t} label="الاسم" placeholder="اكتب اسمك يانجم" />
+            t={t} label="الاسم" placeholder="اكتب اسمك يانجم" slotType="room" />
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }} className="grid grid-cols-2 gap-3">

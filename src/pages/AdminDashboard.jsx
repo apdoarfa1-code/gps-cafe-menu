@@ -8,6 +8,7 @@ import {
 import { useMenuData } from '../hooks/useMenuData.js'
 import { hasSupabase, upsertSection, upsertItem, deleteSection, deleteItem } from '../lib/supabase.js'
 import AnimatedBackground from '../components/AnimatedBackground.jsx'
+import SlotManager from '../components/SlotManager.jsx'
 
 const API_URL = import.meta.env.VITE_SUPABASE_URL
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -324,6 +325,11 @@ export default function AdminDashboard() {
             })}
             {filteredItems.length === 0 && <p className="text-white/20 text-xs text-center py-4">لا يوجد منتجات</p>}
           </div>
+        </div>
+
+        {/* Slot Booking Manager — Card */}
+        <div className="mt-6 pt-6 border-t border-white/[0.06]">
+          <SlotManager />
         </div>
       </div>
 
