@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Cake, Crown, Sparkles, Heart, Calendar, Users, FileText, Send, Phone, User } from 'lucide-react'
+import { ArrowLeft, Cake, Crown, Sparkles, Heart, Calendar, Users, FileText, Send, Phone, User, Ban } from 'lucide-react'
 import { telLink, eventsWhatsApp } from '../lib/whatsapp.js'
+import { useSlotBookings } from '../hooks/useSlotBookings.jsx'
 
 const partyTypes = [
-  { key: 'birthday', icon: Cake, color: '#ff9b7a' },
-  { key: 'vipRoom', icon: Crown, color: '#E0FF00' },
-  { key: 'event', icon: Sparkles, color: '#7dd3fc' },
-  { key: 'wedding', icon: Heart, color: '#fb7185' },
+  { key: 'birthday', icon: Cake, color: '#ff9b7a', slotType: 'room' },
+  { key: 'vipRoom', icon: Crown, color: '#E0FF00', slotType: 'room' },
+  { key: 'event', icon: Sparkles, color: '#7dd3fc', slotType: 'room' },
+  { key: 'wedding', icon: Heart, color: '#fb7185', slotType: 'room' },
 ]
 
 const inputCls = 'w-full bg-white/[0.04] border border-white/10 rounded-2xl px-4 py-3.5 text-white text-[15px] outline-none focus:border-accent/50 focus:bg-white/[0.06] transition-all placeholder-white/25 font-ar'
@@ -18,12 +19,19 @@ export default function EventsPage() {
   const { t, i18n } = useTranslation()
   const lng = i18n.language
   const isRTL = lng === 'ar'
+  const { getBookedForDate, isSlotTaken } = useSlotBookings()
 
   const [name, setName] = useState('')
   const [eventType, setEventType] = useState('birthday')
   const [pax, setPax] = useState('')
   const [date, setDate] = useState('')
   const [details, setDetails] = useState('')
+
+  // Compute booked info for the selected date
+  const selectedParty = partyTypes.find(p => t(p.key) === eventType) || partyTypes[0]
+  const bookedSlotsForDate = date ? getBookedForDate(date, 'room') : []
+  const dateIsBooked = date && isSlotTaken(date, '', 'room') // generic same-day conflict if there's a booked slot with no specific time
+  const showDateWarning = date && bookedSlotsForDate.length > 0
 
   const wts = eventsWhatsApp({ name, eventType, pax, date, details })
 
@@ -107,6 +115,27 @@ export default function EventsPage() {
                 className={inputCls} />
             </div>
           </div>
+
+          <AnimatePresence>
+            {showDateWarning && (
+              <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                className="glass rounded-xl p-3 text-xs font-ar border border-amber-500/25 text-amber-300/90">
+                <div className="flex items-start gap-2">
+                  <Ban size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold mb-1">تنبيه: في حاجزات على الفترة دي</p>
+                    <p className="text-amber-200/70 text-[11px]">
+                      {bookedSlotsForDate.length} موعد محجوز على هذا التاريخ
+                      {bookedSlotsForDate.map(s => s.time).filter(Boolean).length > 0 && (
+                        <span> — الساعات: {bookedSlotsForDate.map(s => s.time).filter(Boolean).join('، ')}</span>
+                      )}
+                    </p>
+                    <p className="text-amber-200/50 text-[10px] mt-1">اتوكل على الله وابعت الطلب، الإدارة هتأكدلك التوفر</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div>
             <label className="text-white/50 text-[11px] font-bold uppercase tracking-[0.15em] flex items-center gap-1.5 mb-2 font-ar">

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Clock, Calendar, Plus, Trash2, X, Filter, Activity, Ban } from 'lucide-react'
+import { Plus, Trash2, X, Activity } from 'lucide-react'
 import { useSlotBookings } from '../hooks/useSlotBookings.jsx'
 
 const DAYS = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة']
@@ -24,9 +24,13 @@ export default function SlotManager() {
     .filter(s => !filterDate || s.date === filterDate)
     .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.time || '').localeCompare(b.time || ''))
 
-  const handleAdd = () => {
-    if (!form.date) { setMsg('اختار التاريخ'); return }
-    addSlot({ ...form, status: 'available' })
+  const handleAdd = async () => {
+    if (!form.date) { setMsg('اختار اليوم'); return }
+    if (!form.time) { setMsg('اختار الساعة'); return }
+    // Prevent duplicate slot for the same type/date/time
+    const duplicate = slots.find(s => s.type === form.type && s.date === form.date && s.time === form.time)
+    if (duplicate) { setMsg('⚠ فيه slot زيها بالظبط'); return }
+    await addSlot({ ...form, status: 'available' })
     setForm({ type: 'padel', date: '', time: '', name: '', phone: '' })
     setShowForm(false)
     setMsg('✓ تمت الإضافة')
@@ -129,12 +133,12 @@ export default function SlotManager() {
               </div>
               <div className="flex gap-1.5">
                 <motion.button whileTap={{ scale: 0.9 }}
-                  onClick={() => { const st = toggleSlot(s.id); setMsg(st === 'booked' ? '🔴 محجوز' : '🟢 متاح') }}
+                  onClick={async () => { const st = await toggleSlot(s.id); setMsg(st === 'booked' ? '🔴 محجوز' : '🟢 متاح') }}
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${s.status === 'booked' ? 'bg-red-500/15 text-red-400' : 'bg-green-500/15 text-green-400'}`}>
                   {s.status === 'booked' ? 'مشغول' : 'متاح'}
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.9 }}
-                  onClick={() => { deleteSlot(s.id); setMsg('✓ تم الحذف') }}
+                  onClick={async () => { await deleteSlot(s.id); setMsg('✓ تم الحذف') }}
                   className="p-1 rounded-lg bg-white/[0.04] text-white/30 hover:text-red-400">
                   <Trash2 size={12} />
                 </motion.button>

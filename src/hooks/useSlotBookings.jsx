@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { fetchSlots, hasSupabase } from '../lib/supabase.js'
+import { useEffect, useState, useCallback } from 'react'
+import { fetchSlots, upsertSlot, deleteSlot as sbDeleteSlot, toggleSlotStatus, hasSupabase } from '../lib/supabase.js'
 
 const STORAGE_KEY = 'gps_slot_bookings'
 
@@ -14,50 +14,65 @@ function saveStored(data) {
 export function useSlotBookings() {
   const [slots, setSlots] = useState([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true)
+    setError(null)
     if (hasSupabase) {
       try {
         const data = await fetchSlots()
-        if (data) { setSlots(data); return }
-      } catch (e) { console.warn('Supabase fetchSlots failed:', e.message) }
+        if (data) { setSlots(data); setLoading(false); return }
+      } catch (e) { console.warn('Supabase fetchSlots failed:', e.message); setError(e.message) }
     }
     setSlots(loadStored())
     setLoading(false)
-  }
+  }, [])
 
-  useEffect(() => { refresh() }, [])
+  useEffect(() => { refresh() }, [refresh])
 
-  const addSlot = (slot) => {
-    const newSlot = { ...slot, id: Date.now(), created_at: new Date().toISOString() }
+  const addSlot = async (slot) => {
+    const newSlot = { ...slot, id: Date.now(), status: slot.status || 'available', created_at: new Date().toISOString() }
     const updated = [...slots, newSlot]
     setSlots(updated)
-    if (!hasSupabase) saveStored(updated)
+    if (!hasSupabase) {
+      saveStored(updated)
+    } else {
+      try { await upsertSlot(newSlot) } catch (e) { console.warn('upsertSlot failed:', e.message); setError(e.message) }
+    }
     return newSlot
   }
 
-  const updateSlot = (id, updates) => {
+  const updateSlot = async (id, updates) => {
     const updated = slots.map(s => s.id === id ? { ...s, ...updates } : s)
     setSlots(updated)
-    if (!hasSupabase) saveStored(updated)
+    const target = updated.find(s => s.id === id)
+    if (!hasSupabase) {
+      saveStored(updated)
+    } else if (target) {
+      try { await upsertSlot(target) } catch (e) { console.warn('upsertSlot (update) failed:', e.message); setError(e.message) }
+    }
   }
 
-  const toggleSlot = (id) => {
+  const toggleSlot = async (id) => {
     const slot = slots.find(s => s.id === id)
     if (!slot) return
     const newStatus = slot.status === 'booked' ? 'available' : 'booked'
-    updateSlot(id, { status: newStatus })
+    await updateSlot(id, { status: newStatus })
     return newStatus
   }
 
-  const deleteSlot = (id) => {
+  const deleteSlotById = async (id) => {
     const updated = slots.filter(s => s.id !== id)
     setSlots(updated)
-    if (!hasSupabase) saveStored(updated)
+    if (!hasSupabase) {
+      saveStored(updated)
+    } else {
+      try { await sbDeleteSlot(id) } catch (e) { console.warn('deleteSlot failed:', e.message); setError(e.message) }
+    }
   }
 
-  // Get booked slots for a specific date
+  // Get booked slots for a specific date (and optional type)
   const getBookedForDate = (date, type = 'all') => {
     return slots.filter(s => s.status === 'booked' && s.date === date && (type === 'all' || s.type === type))
   }
@@ -67,5 +82,5 @@ export function useSlotBookings() {
     return slots.some(s => s.status === 'booked' && s.date === date && s.time === time && s.type === type)
   }
 
-  return { slots, loading, addSlot, updateSlot, toggleSlot, deleteSlot, getBookedForDate, isSlotTaken, refresh }
+  return { slots, loading, error, addSlot, updateSlot, toggleSlot, deleteSlot: deleteSlotById, getBookedForDate, isSlotTaken, refresh }
 }
