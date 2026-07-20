@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { fetchSlots, upsertSlot, deleteSlot as sbDeleteSlot, toggleSlotStatus, hasSupabase } from '../lib/supabase.js'
 
 const STORAGE_KEY = 'gps_slot_bookings'
+const DAY_MAP = { 'السبت': 6, 'الأحد': 0, 'الإثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5 }
 
 function loadStored() {
   try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : [] } catch { return [] }
@@ -9,6 +10,44 @@ function loadStored() {
 
 function saveStored(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) } catch {}
+}
+
+function cleanExpiredSlots(slots) {
+  if (!slots || !slots.length) return slots
+  const now = new Date()
+  const todayDayIdx = now.getDay() // 0=Sun, 6=Sat (egypt: Sat=last)
+  const todayHour = String(now.getHours()).padStart(2, '0')
+  const todayMin = String(now.getMinutes()).padStart(2, '0')
+  const todayTimeNum = parseInt(todayHour + todayMin, 10) // e.g. 1430
+
+  return slots.filter(s => {
+    if (!s.date || !s.time) return true // keep slots with no date/time for safety
+    const slotDayIdx = DAY_MAP[s.date]
+    if (slotDayIdx == null) return true
+
+    // Parse slot time like "2:00 م"
+    const timeMatch = s.time.match(/(\d+):(\d+)\s*(م|ص|AM|PM)?/)
+    if (!timeMatch) return true
+    let hour = parseInt(timeMatch[1], 10)
+    const min = parseInt(timeMatch[2], 10)
+    const ampm = timeMatch[3] || 'ص'
+    // Convert to 24h if PM/م
+    if ((ampm === 'م' || ampm === 'PM') && hour !== 12) hour += 12
+    if ((ampm === 'ص' || ampm === 'AM') && hour === 12) hour = 0
+    const slotTimeNum = parseInt(String(hour).padStart(2, '0') + String(min).padStart(2, '0'), 10)
+
+    // Same day: check if time has passed
+    if (slotDayIdx === todayDayIdx) {
+      return slotTimeNum >= todayTimeNum
+    }
+
+    // Different day: check if day already passed this week
+    // Egyptian week: 6=Sat > 0=Sun > 1=Mon > ... > 5=Fri
+    // Calculate distance in week order
+    const todayPos = todayDayIdx === 6 ? 0 : todayDayIdx + 1 // 0=Sat, 1=Sun...6=Fri
+    const slotPos = slotDayIdx === 6 ? 0 : slotDayIdx + 1
+    return slotPos >= todayPos
+  })
 }
 
 export function useSlotBookings() {
@@ -22,10 +61,18 @@ export function useSlotBookings() {
     if (hasSupabase) {
       try {
         const data = await fetchSlots()
-        if (data) { setSlots(data); setLoading(false); return }
+        if (data) {
+          const cleaned = cleanExpiredSlots(data)
+          setSlots(cleaned)
+          setLoading(false)
+          return
+        }
       } catch (e) { console.warn('Supabase fetchSlots failed:', e.message); setError(e.message) }
     }
-    setSlots(loadStored())
+    const stored = loadStored()
+    const cleaned = cleanExpiredSlots(stored)
+    setSlots(cleaned)
+    if (cleaned.length !== stored.length) saveStored(cleaned)
     setLoading(false)
   }, [])
 
@@ -82,5 +129,5 @@ export function useSlotBookings() {
     return slots.some(s => s.status === 'booked' && s.date === date && s.time === time && s.type === type)
   }
 
-  return { slots, loading, error, addSlot, updateSlot, toggleSlot, deleteSlot: deleteSlotById, getBookedForDate, isSlotTaken, refresh }
+  return { slots, loading, error, addSlot, updateSlot, toggleSlot, deleteSlot: deleteSlotById, getBookedForDate, isSlotTaken, refresh, cleanExpired: () => { const c = cleanExpiredSlots(slots); setSlots(c); if (!hasSupabase) saveStored(c); } }
 }
