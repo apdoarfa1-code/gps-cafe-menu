@@ -56,10 +56,15 @@ function Accordion({ title, icon: Icon, color, value, onChange, options, open, o
 function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, setDay, hour, setHour, t, label, placeholder, slotType = 'playstation' }) {
   const [openWhich, setOpenWhich] = useState(null)
   const toggle = (k) => setOpenWhich(openWhich === k ? null : k)
-  const { getBookedForDate } = useSlotBookings()
+  const { getBookedForDate, bookSlot } = useSlotBookings()
   const bookedHours = day ? getBookedForDate(day, slotType).map(s => s.time).filter(Boolean) : []
   const isHourBooked = hour && bookedHours.includes(hour)
   const wts = playstationWhatsApp({ name, type: title, day, hour })
+
+  const handleBook = () => {
+    if (name && day && hour && !isHourBooked) bookSlot(day, hour, slotType, name)
+    window.open(wts, '_blank', 'noopener')
+  }
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -76,12 +81,12 @@ function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, 
           <h3 className="text-lg font-bold font-ar" style={{ color: accent }}>{title}</h3>
           <p className="text-white/40 text-xs mt-0.5 font-ar">{subtitle}</p>
         </div>
-        <motion.a href={wts} target="_blank" rel="noreferrer"
+        <motion.button onClick={handleBook} disabled={!name || !day || !hour || isHourBooked}
           whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
-          className="w-11 h-11 rounded-full flex items-center justify-center text-black flex-shrink-0"
+          className="w-11 h-11 rounded-full flex items-center justify-center text-black flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: `linear-gradient(135deg, ${accent}, ${accent}cc)`, boxShadow: `0 4px 18px -2px ${accent}66` }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </motion.a>
+        </motion.button>
       </div>
 
       <div>
@@ -167,12 +172,12 @@ export default function PlaystationPage() {
               className="glass rounded-2xl py-3.5 flex items-center justify-center gap-2 font-semibold text-[15px] text-white/80 hover:text-accent transition-colors">
               📞 {t('call')}
             </motion.a>
-            <motion.a href={playstationWhatsApp({ name: '', type: 'استفسار' })} target="_blank" rel="noreferrer"
+            <motion.button onClick={() => window.open(playstationWhatsApp({ name: '', type: 'استفسار' }), '_blank', 'noopener')}
               whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.97 }}
               className="rounded-2xl py-3.5 flex items-center justify-center gap-2 font-semibold text-[15px] text-white transition-colors"
               style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)', boxShadow: '0 8px 24px -4px rgba(34,197,94,0.4)' }}>
               💬 {t('whatsapp')}
-            </motion.a>
+            </motion.button>
           </motion.div>
         </div>
       </div>

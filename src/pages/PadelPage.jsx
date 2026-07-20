@@ -57,7 +57,7 @@ export default function PadelPage() {
   const { t, i18n } = useTranslation()
   const lng = i18n.language
   const isRTL = lng === 'ar'
-  const { getBookedForDate } = useSlotBookings()
+  const { getBookedForDate, bookSlot } = useSlotBookings()
   const [name, setName] = useState('')
   const [hours, setHours] = useState(1)
   const [day, setDay] = useState('')
@@ -159,12 +159,16 @@ export default function PadelPage() {
                 className="glass rounded-2xl py-3.5 flex items-center justify-center gap-2 font-semibold text-[15px] text-white/80 hover:text-accent transition-colors">
                 📞 {t('call')}
               </motion.a>
-              <motion.a href={wts} target="_blank" rel="noreferrer"
+              <motion.button onClick={() => {
+                  if (name && day && hour) bookSlot(day, hour, 'padel', name)
+                  window.open(wts, '_blank', 'noopener')
+                }}
                 whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.97 }}
-                className="rounded-2xl py-3.5 flex items-center justify-center gap-2 font-semibold text-[15px] text-white transition-colors"
+                disabled={!name || !day || !hour || isHourBooked}
+                className="rounded-2xl py-3.5 flex items-center justify-center gap-2 font-semibold text-[15px] text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)', boxShadow: '0 8px 24px -4px rgba(34,197,94,0.4)' }}>
                 💬 {t('whatsapp')}
-              </motion.a>
+              </motion.button>
             </div>
           </motion.div>
         </div>
