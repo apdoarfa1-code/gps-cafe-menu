@@ -5,6 +5,7 @@ import { ArrowRight, Coffee, Trophy, Gamepad2, PartyPopper, Phone, MessageCircle
 import { telLink, menuWhatsApp } from '../lib/whatsapp.js'
 import AnimatedBackground from '../components/AnimatedBackground.jsx'
 import Magnetic from '../components/Magnetic.jsx'
+import { Meteors, AnimatedGridPattern } from '../components/magicui/index.js'
 
 const services = [
   { key: 'cafe', to: '/menu', icon: Coffee, color: '#D6FF00', bg: 'linear-gradient(135deg, rgba(214,255,0,0.18), rgba(214,255,0,0.04))', border: 'rgba(214,255,0,0.25)' },
@@ -59,6 +60,8 @@ export default function Home() {
   return (
     <div className="relative min-h-screen px-5 pb-10 pt-6 overflow-hidden noise-overlay">
       <AnimatedBackground />
+      <AnimatedGridPattern dotColor="#E0FF00" dotSize={1.2} className="opacity-25" />
+      <Meteors number={4} />
 
       <div className="relative z-10 max-w-md mx-auto">
         {/* Hero */}

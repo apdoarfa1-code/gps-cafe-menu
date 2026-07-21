@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Gamepad2, Sofa, User, Clock, Calendar, ChevronDown, Plus, Minus, Ban } from 'lucide-react'
 import { telLink, playstationWhatsApp } from '../lib/whatsapp.js'
 import { useSlotBookings } from '../hooks/useSlotBookings.jsx'
+import { ShineBorder, Meteors, AnimatedGridPattern } from '../components/magicui/index.js'
 
 const DAYS = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة']
 const HOURS = Array.from({ length: 12 }, (_, i) => `${i+1}:00 ${i+1 < 12 ? 'م' : 'ص'}`)
@@ -67,10 +68,11 @@ function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, 
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className="glass-strong rounded-3xl p-5 w-full space-y-3"
-      style={{ borderColor: `${accent}22` }}>
+    <ShineBorder shineColor={accent} duration={6} className="rounded-3xl w-full">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -4 }}
+        className="glass-strong rounded-3xl p-5 w-full space-y-3"
+        style={{ borderColor: `${accent}22` }}>
       <div className="flex items-center gap-3 mb-1">
         <motion.div whileHover={{ rotate: 8, scale: 1.1 }}
           className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -106,12 +108,27 @@ function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, 
       <AnimatePresence>
         {isHourBooked && (
           <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-            className="glass rounded-xl p-2.5 text-red-400/80 text-xs flex items-center gap-2 border border-red-500/20 font-ar">
-            <Ban size={12} /> الساعة دي محجوزة — اختار ساعة تانية يانجم
+            className="glass rounded-2xl p-3 text-red-400/90 text-sm flex items-center gap-2 border border-red-500/30 font-ar">
+            <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center flex-shrink-0">
+              <Ban size={18} className="text-red-400" />
+            </div>
+            <div className="flex-1">
+              <div className="font-bold text-red-400">الساعة دي محجوزة يا نجم</div>
+              <div className="text-xs text-red-400/70 mt-0.5">اختار ساعة تانية عشان نكمّل حجزك</div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+      <motion.button onClick={handleBook}
+        disabled={!name || !day || !hour || isHourBooked}
+        whileHover={{ scale: isHourBooked ? 1 : 1.02, y: isHourBooked ? 0 : -2 }}
+        whileTap={{ scale: isHourBooked ? 1 : 0.97 }}
+        className={`w-full py-3.5 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all ${isHourBooked ? 'cursor-not-allowed bg-white/[0.04] text-white/30 border border-white/10' : 'text-white'}`}
+        style={isHourBooked ? {} : { background: `linear-gradient(135deg, ${accent}, ${accent}cc)`, boxShadow: `0 8px 24px -4px ${accent}66` }}>
+        {isHourBooked ? '🔒 الساعة دي محجوزة' : `💬 احجز الآن (${t('whatsapp')})`}
+      </motion.button>
+      </motion.div>
+    </ShineBorder>
   )
 }
 
@@ -124,6 +141,7 @@ export default function PlaystationPage() {
 
   return (
     <div className="relative min-h-screen bg-black overflow-hidden">
+      {/* Backgrounds */}
       <div className="absolute inset-0 z-0">
         <video src="/assets/videos/ps.mp4" autoPlay muted loop playsInline
           className="absolute inset-0 w-full h-full object-cover opacity-25"
@@ -131,6 +149,13 @@ export default function PlaystationPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/95" />
       </div>
       <div className="absolute inset-0 opacity-35 bg-[radial-gradient(ellipse_at_top,rgba(192,132,252,0.4)_0%,transparent_60%)]" />
+      <AnimatedGridPattern dotColor="#c084fc" dotSize={1.2} className="opacity-30" />
+      <Meteors number={6} />
+      <motion.div className="absolute top-1/3 -left-20 w-72 h-72 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(192,132,252,0.18), transparent 70%)' }}
+        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      />
 
       <div className="relative z-10 flex flex-col min-h-screen max-w-md mx-auto px-5 pb-10">
         <div className="flex items-center gap-3 pt-4">
@@ -143,15 +168,22 @@ export default function PlaystationPage() {
           <h2 className="text-xl font-bold font-ar" style={{ color: '#c084fc' }}>{t('psBooking')}</h2>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.6 }} className="text-center mt-6 mb-3">
+        <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.1, duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="text-center mt-6 mb-3">
           <motion.div initial={{ scale: 0.6, rotate: -10 }} animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 }}
-            className="w-20 h-20 rounded-full mx-auto overflow-hidden shadow-[0_0_40px_rgba(192,132,252,0.6)] mb-3">
+            className="w-24 h-24 rounded-full mx-auto overflow-hidden shadow-[0_0_40px_rgba(192,132,252,0.6)] mb-3 relative">
+            <motion.div className="absolute inset-0 rounded-full pointer-events-none"
+              animate={{ boxShadow: ['0 0 20px rgba(192,132,252,0.4)', '0 0 50px rgba(192,132,252,0.7)', '0 0 20px rgba(192,132,252,0.4)'] }}
+              transition={{ duration: 2.5, repeat: Infinity }}
+            />
             <img src="/assets/logo.jpg" alt="GPS" className="w-full h-full object-cover" />
           </motion.div>
-          <h1 className="text-3xl font-black text-white tracking-tight font-display" style={{ color: '#d8b4fe' }}>{t('psTitle')}</h1>
-          <p className="text-white/40 text-sm font-ar">{t('psSubtitle')}</p>
+          <h1 className="text-4xl font-black tracking-tight font-display drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
+            style={{ color: '#d8b4fe' }}>
+            <span className="bg-gradient-to-r from-[#d8b4fe] via-[#c084fc] to-[#d8b4fe] bg-clip-text text-transparent">{t('psTitle')}</span>
+          </h1>
+          <p className="text-white/40 text-sm font-ar mt-1">{t('psSubtitle')}</p>
         </motion.div>
 
         <div className="flex-1 flex flex-col gap-3 justify-center pb-4">
