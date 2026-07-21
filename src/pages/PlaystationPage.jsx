@@ -57,14 +57,16 @@ function Accordion({ title, icon: Icon, color, value, onChange, options, open, o
 function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, setDay, hour, setHour, t, label, placeholder, slotType = 'playstation' }) {
   const [openWhich, setOpenWhich] = useState(null)
   const toggle = (k) => setOpenWhich(openWhich === k ? null : k)
-  const { getBookedForDate, bookSlot } = useSlotBookings()
+  const { getBookedForDate, bookSlot, isSlotTaken } = useSlotBookings()
   const bookedHours = day ? getBookedForDate(day, slotType).map(s => s.time).filter(Boolean) : []
   const availableHours = HOURS.filter(h => !bookedHours.includes(h))
   const isHourBooked = hour && bookedHours.includes(hour)
   const wts = playstationWhatsApp({ name, type: title, day, hour })
 
   const handleBook = () => {
-    if (name && day && hour && !isHourBooked) bookSlot(day, hour, slotType, name)
+    // Defensive: verify still available
+    if (!name || !day || !hour || isHourBooked || isSlotTaken(day, hour, slotType)) return
+    bookSlot(day, hour, slotType, name)
     window.open(wts, '_blank', 'noopener')
   }
 

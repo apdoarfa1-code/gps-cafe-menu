@@ -1,19 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  LogOut, Plus, Trash2, X, Search, Upload,
-  Boxes, Tag, ArrowLeft, Save,
-} from 'lucide-react'
+import { LogOut, Boxes, Tag, Activity, RefreshCw, Database, FileText, Sparkles, ChevronLeft, LayoutGrid } from 'lucide-react'
 import { useMenuData } from '../hooks/useMenuData.js'
-import { hasSupabase, upsertSection, upsertItem, deleteSection, deleteItem } from '../lib/supabase.js'
+import { hasSupabase } from '../lib/supabase.js'
 import AnimatedBackground from '../components/AnimatedBackground.jsx'
-import SlotManager from '../components/SlotManager.jsx'
-import { Download } from 'lucide-react'
-import { downloadCSV } from '../lib/csvExport.js'
-
-const API_URL = import.meta.env.VITE_SUPABASE_URL
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+import { ShineBorder, Meteors, AnimatedGridPattern } from '../components/magicui/index.js'
+import SectionsPanel from '../components/admin/SectionsPanel.jsx'
+import ItemsPanel from '../components/admin/ItemsPanel.jsx'
+import BookingsPanel from '../components/admin/BookingsPanel.jsx'
+import { itemsToCSV, sectionsToCSV, csvItemsToAdmin, csvSectionsToAdmin, parseCSV, subscribeToPaperUpdates } from '../lib/paperMenu.js'
 
 const STORAGE_KEY_S = 'gps_admin_sections'
 const STORAGE_KEY_I = 'gps_admin_items'
@@ -26,110 +22,6 @@ function saveStored(key, data) {
   try { sessionStorage.setItem(key, JSON.stringify(data)) } catch {}
 }
 
-const inputCls = 'w-full bg-white/[0.06] border border-white/10 rounded-xl px-3.5 py-3 text-white text-sm outline-none focus:border-accent/60 focus:bg-white/[0.1] transition-all placeholder-white/25 font-ar'
-
-function SectionForm({ section, onSave, onDelete, onCancel }) {
-  const [form, setForm] = useState(section || { id: null, name_ar: '', name_en: '', slug: '', color: '#D6FF00', icon: '🍽️', position: 1 })
-
-  useEffect(() => { if (section) setForm({...section}) }, [section])
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.98 }}
-      className="glass-strong rounded-2xl p-5 space-y-3"
-    >
-      <div className="flex items-center justify-between">
-        <h4 className="text-accent font-bold text-sm flex items-center gap-2"><Boxes size={14} /> {section ? 'Edit Section' : 'New Section'}</h4>
-        <button onClick={onCancel} className="text-white/30 hover:text-white"><X size={18} /></button>
-      </div>
-      <input className={inputCls} placeholder="الاسم عربي" value={form.name_ar} onChange={e => setForm(f => ({...f, name_ar: e.target.value}))} />
-      <input className={inputCls} placeholder="Name English" value={form.name_en} onChange={e => setForm(f => ({...f, name_en: e.target.value}))} />
-      <input className={inputCls} placeholder="slug" value={form.slug} onChange={e => setForm(f => ({...f, slug: e.target.value}))} />
-      <div className="flex gap-2">
-        <input className={inputCls} placeholder="#hex color" value={form.color} onChange={e => setForm(f => ({...f, color: e.target.value}))} />
-        <input className={`${inputCls} w-20`} type="number" placeholder="ترتيب" value={form.position} onChange={e => setForm(f => ({...f, position: Number(e.target.value)}))} />
-        <input className={`${inputCls} w-16 text-center text-xl`} placeholder="🎯" value={form.icon} onChange={e => setForm(f => ({...f, icon: e.target.value}))} />
-      </div>
-      <button onClick={() => onSave(form)} className="w-full py-3 rounded-xl font-bold text-black text-sm flex items-center justify-center gap-2"
-        style={{ background: 'linear-gradient(135deg,#D6FF00,#CFFF04)' }}>
-        <Save size={15} /> Save
-      </button>
-      {section && (
-        <button onClick={() => onDelete(section.id)} className="w-full py-2.5 rounded-xl bg-red-500/15 text-red-400 text-sm flex items-center justify-center gap-2">
-          <Trash2 size={14} /> Delete Permanently
-        </button>
-      )}
-    </motion.div>
-  )
-}
-
-function ItemForm({ item, sections, onSave, onDelete, onCancel }) {
-  const [form, setForm] = useState(item || { id: null, section_id: sections[0]?.id || 1, name_ar: '', name_en: '', price: 0, rating: 4.7, image: '', suggest_id: null })
-  const [uploading, setUploading] = useState(false)
-  const [uploadErr, setUploadErr] = useState('')
-
-  useEffect(() => { if (item) setForm({...item}) }, [item])
-
-  const uploadImage = async (file) => {
-    if (!API_URL || !ANON_KEY) { setUploadErr('Supabase not configured'); return }
-    setUploading(true); setUploadErr('')
-    try {
-      const name = `items/${Date.now()}-${file.name.replace(/\s/g,'')}`
-      const res = await fetch(`${API_URL}/storage/v1/object/public/images/${name}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${ANON_KEY}` },
-        body: file,
-      })
-      if (!res.ok) throw new Error(await res.text())
-      setForm(f => ({...f, image: `${API_URL}/storage/v1/object/public/images/${name}` }))
-    } catch (e) { setUploadErr('Upload failed: ' + e.message) }
-    finally { setUploading(false) }
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.98 }}
-      className="glass-strong rounded-2xl p-5 space-y-3"
-    >
-      <div className="flex items-center justify-between">
-        <h4 className="text-accent font-bold text-sm flex items-center gap-2"><Tag size={14} /> {item ? 'Edit Item' : 'New Item'}</h4>
-        <button onClick={onCancel} className="text-white/30 hover:text-white"><X size={18} /></button>
-      </div>
-      <select className={inputCls} value={form.section_id} onChange={e => setForm(f => ({...f, section_id: Number(e.target.value)}))}>
-        {sections.map(s => <option key={s.id} value={s.id} className="bg-bg2">{s.name_ar}</option>)}
-      </select>
-      <input className={inputCls} placeholder="الاسم عربي" value={form.name_ar} onChange={e => setForm(f => ({...f, name_ar: e.target.value}))} />
-      <input className={inputCls} placeholder="Name English" value={form.name_en} onChange={e => setForm(f => ({...f, name_en: e.target.value}))} />
-      <div className="flex gap-2">
-        <input className={inputCls} type="number" placeholder="Price (EGP)" value={form.price} onChange={e => setForm(f => ({...f, price: Number(e.target.value)}))} />
-        <input className={`${inputCls} w-24`} type="number" step="0.1" min="1" max="5" placeholder="Rating" value={form.rating} onChange={e => setForm(f => ({...f, rating: Number(e.target.value)}))} />
-      </div>
-      <div>
-        <label className="flex items-center gap-2 justify-center py-3 rounded-xl bg-white/[0.04] border border-dashed border-white/10 text-xs text-white/40 cursor-pointer hover:border-accent/50 hover:text-accent transition-all font-ar">
-          {uploading ? 'جاري الرفع…' : (<><Upload size={14} /> {form.image ? 'تغيير الصورة' : 'رفع صورة'}</>)}
-          <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && uploadImage(e.target.files[0])} />
-        </label>
-        {form.image && <img src={form.image} alt="" className="w-16 h-16 object-cover rounded-xl mt-2 mx-auto" />}
-        <input className={`${inputCls} mt-2`} placeholder="أو الصق رابط الصورة" value={form.image} onChange={e => setForm(f => ({...f, image: e.target.value}))} />
-        {uploadErr && <p className="text-red-400 text-xs mt-1">{uploadErr}</p>}
-      </div>
-      <button onClick={() => onSave(form)} className="w-full py-3 rounded-xl font-bold text-black text-sm flex items-center justify-center gap-2"
-        style={{ background: 'linear-gradient(135deg,#D6FF00,#CFFF04)' }}>
-        <Save size={15} /> Save
-      </button>
-      {item && (
-        <button onClick={() => onDelete(item.id)} className="w-full py-2.5 rounded-xl bg-red-500/15 text-red-400 text-sm flex items-center justify-center gap-2">
-          <Trash2 size={14} /> Delete Permanently
-        </button>
-      )}
-    </motion.div>
-  )
-}
-
 export default function AdminDashboard() {
   const nav = useNavigate()
   const isAuthed = sessionStorage.getItem('gps_admin') === '1'
@@ -138,28 +30,79 @@ export default function AdminDashboard() {
   const { sections: baseSections, items: baseItems, loading, usingDemo } = useMenuData()
   const [sectionItems, setSectionItems] = useState(() => loadStored(STORAGE_KEY_S, []))
   const [itemsList, setItemsList] = useState(() => loadStored(STORAGE_KEY_I, []))
-  const [editingSection, setEditingSection] = useState(null)
-  const [newSection, setNewSection] = useState(false)
-  const [editingItem, setEditingItem] = useState(null)
-  const [newItem, setNewItem] = useState(false)
-  const [search, setSearch] = useState('')
+  const [openPanel, setOpenPanel] = useState(null) // 'sections' | 'items' | 'bookings' | null
   const [msg, setMsg] = useState('')
 
-  // Initialize from base data if nothing stored
+  // Initialize from base data
   useEffect(() => {
     if (baseSections.length && sectionItems.length === 0) {
       setSectionItems(baseSections)
       saveStored(STORAGE_KEY_S, baseSections)
+      sectionsToCSV(baseSections, baseItems)
     }
     if (baseItems.length && itemsList.length === 0) {
       setItemsList(baseItems)
       saveStored(STORAGE_KEY_I, baseItems)
+      itemsToCSV(baseItems, baseSections)
     }
   }, [baseSections, baseItems])
 
-  const filteredItems = itemsList.filter(i =>
-    !search || i.name_ar.includes(search) || i.name_en.toLowerCase().includes(search.toLowerCase())
-  )
+  // Subscribe to paper (CSV) updates from other tabs/imports
+  useEffect(() => {
+    const unsub = subscribeToPaperUpdates(({ key }) => {
+      // Triggered when CSV imported, auto-refresh local state from localStorage
+      if (key === 'gps_paper_items') {
+        try {
+          const raw = localStorage.getItem('gps_paper_items')
+          if (raw) {
+            const parsed = parseCSV(['id,section_id,name_ar,name_en,price,rating,image,description_ar,description_en,calories,prep_time,tags,is_active,suggest_id,suggest_id,section_ar,section_en,section_slug'].concat(['']).join('\n'))
+            // simpler: just rebuild the local items from the paper
+            const items = csvItemsToAdmin(JSON.parse(raw))
+            setItemsList(prev => {
+              const merged = [...prev]
+              items.forEach(imp => {
+                const existing = merged.findIndex(i => i.id === imp.id)
+                if (existing >= 0) merged[existing] = { ...merged[existing], ...imp }
+                else merged.push(imp)
+              })
+              saveStored(STORAGE_KEY_I, merged)
+              return merged
+            })
+          }
+        } catch {}
+      } else if (key === 'gps_paper_sections') {
+        try {
+          const raw = localStorage.getItem('gps_paper_sections')
+          if (raw) {
+            const sects = csvSectionsToAdmin(JSON.parse(raw))
+            setSectionItems(prev => {
+              const merged = [...prev]
+              sects.forEach(imp => {
+                const existing = merged.findIndex(s => s.id === imp.id)
+                if (existing >= 0) merged[existing] = { ...merged[existing], ...imp }
+                else merged.push(imp)
+              })
+              saveStored(STORAGE_KEY_S, merged)
+              return merged
+            })
+          }
+        } catch {}
+      }
+    })
+    return unsub
+  }, [])
+
+  const resetAll = () => {
+    if (!confirm('إعادة تعيين كل البيانات للأصل؟')) return
+    setSectionItems(baseSections)
+    setItemsList(baseItems)
+    saveStored(STORAGE_KEY_S, baseSections)
+    saveStored(STORAGE_KEY_I, baseItems)
+    sectionsToCSV(baseSections, baseItems)
+    itemsToCSV(baseItems, baseSections)
+    setMsg('✓ تم الإعادة للأصل + تحديث الشيت')
+    setTimeout(() => setMsg(''), 2500)
+  }
 
   if (loading && sectionItems.length === 0) {
     return (
@@ -169,188 +112,212 @@ export default function AdminDashboard() {
     )
   }
 
-  const resetAll = () => {
-    setSectionItems(baseSections)
-    setItemsList(baseItems)
-    saveStored(STORAGE_KEY_S, baseSections)
-    saveStored(STORAGE_KEY_I, baseItems)
-    setMsg('✓ Reset to original data')
-  }
-
-  const saveSection = async (form) => {
-    if (hasSupabase) {
-      try { await upsertSection(form); setMsg('✓ Saved to Supabase') } catch (e) { setMsg('✗ ' + e.message); return }
-    }
-    let updated
-    if (form.id && sectionItems.find(s => s.id === form.id)) {
-      updated = sectionItems.map(s => s.id === form.id ? { ...s, ...form } : s)
-    } else {
-      const newId = Date.now()
-      updated = [...sectionItems, { ...form, id: newId }]
-    }
-    setSectionItems(updated)
-    saveStored(STORAGE_KEY_S, updated)
-    setMsg('✓ القسم تم حفظه')
-    setEditingSection(null); setNewSection(false)
-  }
-
-  const delSection = async (id) => {
-    if (hasSupabase) {
-      try { await deleteSection(id); setMsg('✓ Deleted') } catch (e) { setMsg('✗ ' + e.message); return }
-    }
-    const updated = sectionItems.filter(s => s.id !== id)
-    setSectionItems(updated)
-    saveStored(STORAGE_KEY_S, updated)
-    // Also remove items linked to this section
-    const cleanItems = itemsList.filter(i => i.section_id !== id)
-    setItemsList(cleanItems)
-    saveStored(STORAGE_KEY_I, cleanItems)
-    setMsg('✓ القسم تم حذفه'); setEditingSection(null)
-  }
-
-  const saveItem = async (form) => {
-    if (hasSupabase) {
-      try { await upsertItem(form); setMsg('✓ Saved to Supabase') } catch (e) { setMsg('✗ ' + e.message); return }
-    }
-    let updated
-    if (form.id && itemsList.find(i => i.id === form.id)) {
-      updated = itemsList.map(i => i.id === form.id ? { ...i, ...form } : i)
-    } else {
-      const newId = Date.now()
-      updated = [...itemsList, { ...form, id: newId }]
-    }
-    setItemsList(updated)
-    saveStored(STORAGE_KEY_I, updated)
-    setMsg('✓ المنتج تم حفظه')
-    setEditingItem(null); setNewItem(false)
-  }
-
-  const delItem = async (id) => {
-    if (hasSupabase) {
-      try { await deleteItem(id); setMsg('✓ Deleted') } catch (e) { setMsg('✗ ' + e.message); return }
-    }
-    const updated = itemsList.filter(i => i.id !== id)
-    setItemsList(updated)
-    saveStored(STORAGE_KEY_I, updated)
-    setMsg('✓ المنتج تم حذفه'); setEditingItem(null)
-  }
-
   return (
-    <div className="relative min-h-screen bg-bg noise-overlay">
+    <div className="relative min-h-screen bg-bg noise-overlay overflow-x-hidden">
       <AnimatedBackground />
-      <div className="relative z-10 max-w-md mx-auto p-5">
-        <div className="flex items-center justify-between mb-5">
+      <AnimatedGridPattern dotColor="#E0FF00" dotSize={1} className="opacity-20" />
+      <Meteors number={3} />
+
+      <div className="relative z-10 max-w-6xl mx-auto p-4 md:p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6 md:mb-8">
           <div className="flex items-center gap-3">
-            <button onClick={() => nav('/home')}
-              className="w-9 h-9 rounded-full glass flex items-center justify-center text-white/60 hover:text-accent transition-colors">
-              <ArrowLeft size={18} />
+            <button onClick={() => nav('/home')} className="w-10 h-10 rounded-full glass flex items-center justify-center text-white/60 hover:text-accent transition-colors">
+              <ChevronLeft size={18} className="rotate-180 md:rotate-0" />
             </button>
             <div>
-              <h1 className="text-xl font-black font-display">Dashboard</h1>
-              <p className="text-white/40 text-[11px] font-ar">{usingDemo ? 'محلي' : 'Supabase'} · {sectionItems.length} اقسام / {itemsList.length} منتجات</p>
+              <h1 className="text-2xl md:text-3xl font-black font-display flex items-center gap-2">
+                <LayoutGrid size={24} className="text-accent" /> Dashboard
+              </h1>
+              <p className="text-white/40 text-xs mt-0.5 flex items-center gap-2">
+                <span className={`inline-block w-2 h-2 rounded-full ${usingDemo ? 'bg-amber-400' : 'bg-green-400'}`} />
+                {usingDemo ? 'وضع Demo (محلي)' : 'متصل بـ Supabase'} · {sectionItems.length} قسم / {itemsList.length} منتج
+              </p>
             </div>
           </div>
-          <div className="flex gap-1.5">
-            <button onClick={resetAll} className="text-xs font-bold px-2 py-1.5 rounded-xl bg-accent/5 text-accent/60">Reset</button>
-            <button onClick={() => { sessionStorage.removeItem('gps_admin'); sessionStorage.removeItem(STORAGE_KEY_S); sessionStorage.removeItem(STORAGE_KEY_I); nav('/home') }}
-              className="flex items-center gap-1 text-red-400 text-xs font-bold px-2 py-1.5 rounded-xl bg-red-500/10">
-              <LogOut size={12} />
+          <div className="flex gap-2">
+            <button onClick={resetAll} className="hidden md:flex items-center gap-1 text-xs font-bold px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/60">
+              <RefreshCw size={12} /> Reset
+            </button>
+            <button onClick={() => { sessionStorage.removeItem('gps_admin'); nav('/home') }}
+              className="flex items-center gap-1 text-red-400 text-xs font-bold px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20">
+              <LogOut size={12} /> <span className="hidden md:inline">خروج</span>
             </button>
           </div>
         </div>
 
         <AnimatePresence>
           {msg && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-              className="glass rounded-xl p-3 text-white/80 text-xs mb-4 flex justify-between items-center">
-              <span>{msg}</span>
-              <button onClick={() => setMsg('')} className="text-white/30 hover:text-white"><X size={14} /></button>
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="mb-4 glass rounded-2xl p-3 text-sm border border-accent/30 flex items-center gap-2">
+              <Sparkles size={14} className="text-accent" /> {msg}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Sections */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-white text-sm flex items-center gap-2"><Boxes size={16} className="text-accent" /> الأقسام</h3>
-            <button onClick={() => { setNewSection(true); setEditingSection(null); setEditingItem(null); setNewItem(false) }}
-              className="text-xs bg-accent/15 text-accent font-bold px-3 py-1.5 rounded-xl hover:bg-accent/25 flex items-center gap-1">
-              <Plus size={12} /> جديد
-            </button>
-          </div>
-          <div className="space-y-2 max-h-[28vh] overflow-auto scrollbar-none">
-            {sectionItems.map(s => (
-              <div key={s.id}
-                onClick={() => { setEditingSection(s); setNewSection(false); setEditingItem(null); setNewItem(false) }}
-                className={`glass rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all ${editingSection?.id === s.id ? 'ring-1 ring-accent/50 bg-accent/5' : ''}`}>
-                <span className="text-xl w-7 text-center">{s.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm truncate">{s.name_ar}</div>
-                  <div className="text-white/30 text-xs truncate">{s.name_en}</div>
-                </div>
-                <div className="w-3.5 h-3.5 rounded-full flex-shrink-0 border-2 border-white/10" style={{ background: s.color, boxShadow: `0 0 12px ${s.color}55` }} />
-              </div>
-            ))}
-          </div>
+        {/* Super Stat Strip */}
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 mb-6">
+          {[
+            { label: 'الأقسام', value: sectionItems.length, color: '#E0FF00', icon: Boxes },
+            { label: 'المنتجات', value: itemsList.length, color: '#52ffa8', icon: Tag },
+            { label: 'الحجوزات', value: '—', color: '#ec4899', icon: Activity },
+          ].map((s, i) => (
+            <motion.div key={s.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+              className="glass rounded-2xl p-3 md:p-4 text-center">
+              <s.icon size={18} className="mx-auto mb-1" style={{ color: s.color }} />
+              <div className="text-[10px] text-white/40 mb-0.5">{s.label}</div>
+              <div className="text-xl md:text-2xl font-black" style={{ color: s.color }}>{s.value}</div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Items */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-white text-sm flex items-center gap-2"><Tag size={16} className="text-accent" /> المنتجات</h3>
-            <button onClick={() => { setNewItem(true); setEditingItem(null); setNewSection(false); setEditingSection(null) }}
-              className="text-xs bg-accent/15 text-accent font-bold px-3 py-1.5 rounded-xl hover:bg-accent/25 flex items-center gap-1">
-              <Plus size={12} /> جديد
-            </button>
-          </div>
-          <div className="glass rounded-xl flex items-center gap-2 px-3 py-2.5 mb-3">
-            <Search size={14} className="text-accent/60 flex-shrink-0" />
-            <input placeholder="ابحث عن منتج…" value={search} onChange={e => setSearch(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/30 font-ar" />
-            {search && <button onClick={() => setSearch('')} className="text-white/30 hover:text-white"><X size={12} /></button>}
-          </div>
-          <div className="space-y-1.5 max-h-[32vh] overflow-auto scrollbar-none">
-            {filteredItems.map(i => {
-              const sec = sectionItems.find(s => s.id === i.section_id)
-              return (
-                <div key={i.id}
-                  onClick={() => { setEditingItem(i); setNewItem(false); setNewSection(false); setEditingSection(null) }}
-                  className={`glass rounded-2xl p-2.5 flex items-center gap-2.5 cursor-pointer transition-all ${editingItem?.id === i.id ? 'ring-1 ring-accent/50 bg-accent/5' : ''}`}>
-                  <img src={i.image || '/assets/images/placeholder.jpg'} alt="" className="w-10 h-10 object-cover rounded-lg flex-shrink-0 bg-bg2" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-xs truncate">{i.name_ar}</div>
-                    <div className="text-white/30 text-[10px] truncate">{i.name_en}</div>
-                  </div>
-                  <div className="text-accent font-black text-xs flex-shrink-0">{i.price} ج.م</div>
-                </div>
-              )
-            })}
-            {filteredItems.length === 0 && <p className="text-white/20 text-xs text-center py-4">لا يوجد منتجات</p>}
-          </div>
+        {/* Three big cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <AdminCard
+            color="#E0FF00"
+            icon={Boxes}
+            title="الأقسام"
+            subtitle="إدارة أقسام المنيو"
+            stat={`${sectionItems.length} قسم`}
+            extra={[
+              `${itemsList.length} منتج موزع`,
+              'تصدير/استيراد CSV',
+              '+ صورة وأيقونة ولون',
+            ]}
+            actionLabel="افتح الأقسام"
+            onClick={() => setOpenPanel('sections')}
+            delay={0.1}
+          />
+          <AdminCard
+            color="#52ffa8"
+            icon={Tag}
+            title="المنتجات"
+            subtitle="كل الصنف مع التفاصيل الكاملة"
+            stat={`${itemsList.length} صنف`}
+            extra={[
+              'صور + سعر + تقييم',
+              'وصف + سعرات + وقت تحضير',
+              'ربط CSV بشيت واحد',
+            ]}
+            actionLabel="افتح المنتجات"
+            onClick={() => setOpenPanel('items')}
+            delay={0.2}
+          />
+          <AdminCard
+            color="#ec4899"
+            icon={Activity}
+            title="الحجوزات"
+            subtitle="بادل · بلايستيشن · روم VIP"
+            stat="3 أنواع"
+            extra={[
+              'حجز يدوي للموظف',
+              'تأكيد / إلغاء / حذف',
+              'يشتغل على كل الموبايلات',
+            ]}
+            actionLabel="افتح الحجوزات"
+            onClick={() => setOpenPanel('bookings')}
+            delay={0.3}
+          />
         </div>
 
-        {/* Slot Booking Manager — Card */}
-        <div className="mt-6 pt-6 border-t border-white/[0.06]">
-          <SlotManager />
+        {/* CSV Sync Tip */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+          className="mt-6 glass rounded-2xl p-4 md:p-5 border border-accent/20 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0">
+            <FileText size={18} className="text-accent" />
+          </div>
+          <div className="flex-1">
+            <div className="font-bold text-sm mb-1 flex items-center gap-2">
+              🔄 ربط شيت Excel / CSV تلقائي
+            </div>
+            <p className="text-white/60 text-xs leading-relaxed">
+              كل تعديل في <span className="text-accent font-bold">الأقسام</span> أو <span className="text-accent font-bold">المنتجات</span> بينعكس تلقائياً في الشيت (`data/gps_menu_data.csv`).
+              اضغط <kbd className="px-1.5 py-0.5 bg-white/[0.06] rounded text-[10px] text-accent">📤 تصدير CSV</kbd> من أي لوحة، عدّل الملف في Excel،
+              ثم ارجع واستورده بـ <kbd className="px-1.5 py-0.5 bg-white/[0.06] rounded text-[10px] text-accent">📥 استيراد CSV</kbd>.
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Footer */}
+        <div className="text-center text-white/20 text-xs mt-8 hidden md:block">
+          GPS · CAFE · CLUB · Admin v3
         </div>
       </div>
 
+      {/* Popups */}
       <AnimatePresence>
-        {(newSection || editingSection) && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => { setEditingSection(null); setNewSection(false) }}>
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md p-4">
-              <SectionForm section={editingSection} onSave={saveSection} onDelete={delSection} onCancel={() => { setEditingSection(null); setNewSection(false) }} />
-            </div>
-          </div>
+        {openPanel === 'sections' && (
+          <SectionsPanel sections={sectionItems} items={itemsList} setSections={(s) => { setSectionItems(s); saveStored(STORAGE_KEY_S, s); sectionsToCSV(s, itemsList) }} onClose={() => setOpenPanel(null)} />
         )}
-        {(newItem || editingItem) && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => { setEditingItem(null); setNewItem(false) }}>
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md p-4">
-              <ItemForm item={editingItem} sections={sectionItems} onSave={saveItem} onDelete={delItem} onCancel={() => { setEditingItem(null); setNewItem(false) }} />
-            </div>
-          </div>
+        {openPanel === 'items' && (
+          <ItemsPanel items={itemsList} sections={sectionItems} setItems={(i) => { setItemsList(i); saveStored(STORAGE_KEY_I, i); itemsToCSV(i, sectionItems) }} onClose={() => setOpenPanel(null)} />
+        )}
+        {openPanel === 'bookings' && (
+          <BookingsPanel onClose={() => setOpenPanel(null)} />
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+function AdminCard({ color, icon: Icon, title, subtitle, stat, extra, actionLabel, onClick, delay }) {
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -6, scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="text-right relative group overflow-hidden rounded-3xl p-0"
+    >
+      <ShineBorder shineColor={color} duration={5 + delay * 2} className="rounded-3xl">
+        <div className="relative glass-strong rounded-3xl p-5 md:p-6 overflow-hidden h-full">
+          {/* Background radial */}
+          <motion.div className="absolute -top-12 -right-12 w-44 h-44 rounded-full pointer-events-none"
+            style={{ background: `radial-gradient(circle, ${color}33, transparent 70%)` }}
+            animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          />
+
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-4">
+              <motion.div whileHover={{ rotate: 8, scale: 1.1 }} transition={{ type: 'spring', stiffness: 400, damping: 14 }}
+                className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: `${color}22`, border: `1px solid ${color}55` }}>
+                <Icon size={26} style={{ color }} strokeWidth={2.2} />
+              </motion.div>
+              <div className="text-right">
+                <div className="text-xl md:text-2xl font-black" style={{ color }}>{stat}</div>
+                <div className="text-[10px] text-white/40 mt-0.5">إحصائية</div>
+              </div>
+            </div>
+
+            <h3 className="text-lg md:text-xl font-black font-ar text-white mb-1">{title}</h3>
+            <p className="text-white/40 text-xs mb-4">{subtitle}</p>
+
+            <ul className="space-y-1.5">
+              {extra?.map((line, i) => (
+                <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: delay + 0.1 + i * 0.08 }}
+                  className="text-xs text-white/55 flex items-start gap-2">
+                  <span className="w-1 h-1 rounded-full flex-shrink-0 mt-1.5" style={{ background: color }} />
+                  {line}
+                </motion.li>
+              ))}
+            </ul>
+
+            <motion.div className="flex items-center gap-2 mt-5 text-sm font-bold"
+              style={{ color }}>
+              <span>{actionLabel}</span>
+              <motion.svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                animate={{ x: [0, 4, 0] }}
+                transition={{ duration: 1.8, repeat: Infinity }}>
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </motion.svg>
+            </motion.div>
+          </div>
+        </div>
+      </ShineBorder>
+    </motion.button>
   )
 }
