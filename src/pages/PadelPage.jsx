@@ -101,6 +101,8 @@ export default function PadelPage() {
   const bookedHours = day
     ? getBookedForDate(day, 'padel').map(s => s.time).filter(Boolean)
     : []
+  // Filter available hours — booked ones hidden completely
+  const availableHours = HOURS.filter(h => !bookedHours.includes(h))
   const isHourBooked = hour && bookedHours.includes(hour)
   const wts = padelWhatsApp({ name, hours, day, hour })
 
@@ -169,8 +171,7 @@ export default function PadelPage() {
             <Picker title="إيمتي؟ (اليوم)" icon={Calendar} color="#52ffa8" value={day} onChange={(v) => { setDay(v); setHour('') }}
               options={DAYS} open={openWhich === 'day'} onToggle={() => toggle('day')} placeholder="اختار اليوم" />
             <Picker title="الساعة كام؟" icon={Clock} color="#52ffa8" value={hour} onChange={setHour}
-              options={HOURS} open={openWhich === 'hour'} onToggle={() => toggle('hour')} placeholder="اختار الساعة"
-              disabled={bookedHours} />
+              options={availableHours} open={openWhich === 'hour'} onToggle={() => toggle('hour')} placeholder={availableHours.length === 0 ? 'كل الساعات محجوزة' : 'اختار الساعة'} />
 
             <div className="text-center pt-1">
               <p className="text-white/40 text-xs uppercase tracking-[0.2em] font-medium mb-2 flex items-center justify-center gap-1.5 font-ar">

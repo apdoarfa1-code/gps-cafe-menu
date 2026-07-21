@@ -59,6 +59,7 @@ function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, 
   const toggle = (k) => setOpenWhich(openWhich === k ? null : k)
   const { getBookedForDate, bookSlot } = useSlotBookings()
   const bookedHours = day ? getBookedForDate(day, slotType).map(s => s.time).filter(Boolean) : []
+  const availableHours = HOURS.filter(h => !bookedHours.includes(h))
   const isHourBooked = hour && bookedHours.includes(hour)
   const wts = playstationWhatsApp({ name, type: title, day, hour })
 
@@ -103,8 +104,7 @@ function BookingCard({ icon: Icon, accent, title, subtitle, name, setName, day, 
       <Accordion title="إيمتي؟ (اليوم)" icon={Calendar} color={accent} value={day} onChange={(v) => { setDay(v); setHour('') }}
         options={DAYS} open={openWhich === 'day'} onToggle={() => toggle('day')} placeholder="اختار اليوم" />
       <Accordion title="الساعة كام؟" icon={Clock} color={accent} value={hour} onChange={setHour}
-        options={HOURS} open={openWhich === 'hour'} onToggle={() => toggle('hour')} placeholder="اختار الساعة"
-        disabled={bookedHours} />
+        options={availableHours} open={openWhich === 'hour'} onToggle={() => toggle('hour')} placeholder={availableHours.length === 0 ? 'كل الساعات محجوزة' : 'اختار الساعة'} />
       <AnimatePresence>
         {isHourBooked && (
           <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
