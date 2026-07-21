@@ -1,0 +1,38 @@
+id,section_id,name_ar,name_en,price,rating,section_ar,section_en,section_slug
+101,1,شاي,Tea,18,4.6,مشروبات ساخنة,Hot Drinks,hot-drinks
+102,1,شاي بالحليب,Milk Tea,24,4.7,مشروبات ساخنة,Hot Drinks,hot-drinks
+103,1,قهوة عربي,Turkish Coffee,28,4.8,مشروبات ساخنة,Hot Drinks,hot-drinks
+104,1,إسبريسو,Espresso,30,4.7,مشروبات ساخنة,Hot Drinks,hot-drinks
+105,1,كابتشينو,Cappuccino,40,4.9,مشروبات ساخنة,Hot Drinks,hot-drinks
+106,1,لاتيه,Latte,42,4.8,مشروبات ساخنة,Hot Drinks,hot-drinks
+107,1,هوت شوكليت,Hot Chocolate,36,4.7,مشروبات ساخنة,Hot Drinks,hot-drinks
+201,2,آيس كابتشينو,Iced Cappuccino,44,4.9,مشروبات باردة,Cold Drinks,cold-drinks
+202,2,آيس لاتيه,Iced Latte,42,4.8,مشروبات باردة,Cold Drinks,cold-drinks
+203,2,آيس أمريكانو,Iced Americano,36,4.7,مشروبات باردة,Cold Drinks,cold-drinks
+204,2,آيس هوت شوكليت,Iced Chocolate,40,4.7,مشروبات باردة,Cold Drinks,cold-drinks
+205,2,موهيتو,Virgin Mojito,48,4.9,مشروبات باردة,Cold Drinks,cold-drinks
+301,3,سموزي فراولة,Strawberry Smoothie,50,4.9,سموزي,Smoothies,smoothies
+302,3,سموزي مانجو,Mango Smoothie,50,4.8,سموزي,Smoothies,smoothies
+303,3,سموزي موز,Banana Smoothie,48,4.7,سموزي,Smoothies,smoothies
+304,3,سموزي مكس,Mixed Smoothie,55,4.9,سموزي,Smoothies,smoothies
+401,4,ميلك شيك شوكليت,Chocolate Milkshake,55,4.9,ميلك شيك,Milkshakes,milkshakes
+402,4,ميلك شيك فانيليا,Vanilla Milkshake,55,4.8,ميلك شيك,Milkshakes,milkshakes
+403,4,ميلك شيك أوريو,Oreo Milkshake,62,5.0,ميلك شيك,Milkshakes,milkshakes
+404,4,ميلك شيك فراولة,Strawberry Milkshake,55,4.8,ميلك شيك,Milkshakes,milkshakes
+501,5,عصير برتقال,Orange Juice,35,4.8,عصائر طبيعية,Fresh Juice,juices
+502,5,عصير ليمون بالنعناع,Lemon Mint,30,4.9,عصائر طبيعية,Fresh Juice,juices
+503,5,عصير أناناس,Pineapple Juice,40,4.7,عصائر طبيعية,Fresh Juice,juices
+504,5,عصير بطيخ,Watermelon Juice,38,4.7,عصائر طبيعية,Fresh Juice,juices
+601,6,تشيز كيك,Cheesecake,70,4.9,حلويات,Desserts,desserts
+602,6,براوني,Brownie,65,4.8,حلويات,Desserts,desserts
+603,6,كوكيز,Cookies,45,4.6,حلويات,Desserts,desserts
+604,6,كنافة,Kunafa,60,4.9,حلويات,Desserts,desserts
+605,6,كريب,Crepe,58,4.7,حلويات,Desserts,desserts
+701,7,شيشة معسل سوليم,"Mu'assel Sole",90,4.8,شيشة,Shisha,shisha
+702,7,شيشة معسل ديون,"Two Apples Mu'assel",90,4.7,شيشة,Shisha,shisha
+703,7,شيشة معسل ليمون نعناع,"Lemon Mint Mu'assel",95,4.9,شيشة,Shisha,shisha
+704,7,شيشة فاخرة,Premium Shisha,120,5.0,شيشة,Shisha,shisha
+801,8,بطاطس مقلية,French Fries,40,4.7,سناكس,Snacks,snacks
+802,8,ناجتس دجاج,Chicken Nuggets,55,4.6,سناكس,Snacks,snacks
+803,8,بصل محمّر,Onion Rings,45,4.7,سناكس,Snacks,snacks
+804,8,جبنة مقلية,Fried Mozzarella,60,4.8,سناكس,Snacks,snacks

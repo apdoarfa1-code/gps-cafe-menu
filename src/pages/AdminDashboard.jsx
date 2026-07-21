@@ -9,6 +9,8 @@ import { useMenuData } from '../hooks/useMenuData.js'
 import { hasSupabase, upsertSection, upsertItem, deleteSection, deleteItem } from '../lib/supabase.js'
 import AnimatedBackground from '../components/AnimatedBackground.jsx'
 import SlotManager from '../components/SlotManager.jsx'
+import { Download } from 'lucide-react'
+import { downloadCSV } from '../lib/csvExport.js'
 
 const API_URL = import.meta.env.VITE_SUPABASE_URL
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
