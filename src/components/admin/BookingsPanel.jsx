@@ -13,7 +13,7 @@ const TYPES = [
 ]
 
 export default function BookingsPanel({ onClose }) {
-  const { slots, toggleSlot, deleteSlot, bookSlot, addSlot, refresh } = useSlotBookings()
+  const { slots, deleteSlot, bookSlot, refresh } = useSlotBookings()
   const [tab, setTab] = useState('padel')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ type: 'padel', date: '', time: '', name: '', phone: '' })
@@ -26,24 +26,17 @@ export default function BookingsPanel({ onClose }) {
   const stats = {
     total: filtered.length,
     booked: filtered.filter(s => s.status === 'booked').length,
-    available: filtered.filter(s => s.status !== 'booked').length,
   }
 
   const handleAdd = async () => {
     if (!form.date) { setMsg('⚠ اختار اليوم'); return }
     if (!form.time) { setMsg('⚠ اختار الساعة'); return }
     if (!form.name) { setMsg('⚠ اكتب اسم العميل'); return }
-    const res = await addSlot({ ...form, status: 'booked' })
-    setMsg(`✓ ${res?.name} تم تسجيل الحجز`)
+    const res = await bookSlot(form.date, form.time, form.type, form.name, form.phone)
+    setMsg(`✓ ${res?.name || form.name} تم تسجيل الحجز`)
     setForm({ type: tab, date: '', time: '', name: '', phone: '' })
     setShowForm(false)
     setTimeout(() => setMsg(''), 2500)
-  }
-
-  const handleToggle = async (id) => {
-    const newStatus = await toggleSlot(id)
-    setMsg(newStatus === 'booked' ? '🔴 مُحجوز' : '🟢 متاح')
-    setTimeout(() => setMsg(''), 1500)
   }
 
   const handleDelete = async (id) => {
@@ -126,18 +119,14 @@ export default function BookingsPanel({ onClose }) {
           ) : (
             <>
               {/* Stats mini */}
-              <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="glass rounded-2xl p-3 text-center">
-                  <div className="text-[10px] text-white/50">الكل</div>
+                  <div className="text-[10px] text-white/50">إجمالي الحجوزات</div>
                   <div className="text-xl font-black text-white">{stats.total}</div>
                 </div>
                 <div className="glass rounded-2xl p-3 text-center">
-                  <div className="text-[10px] text-green-400/60">متاح</div>
-                  <div className="text-xl font-black text-green-400">{stats.available}</div>
-                </div>
-                <div className="glass rounded-2xl p-3 text-center">
-                  <div className="text-[10px] text-red-400/60">محجوز</div>
-                  <div className="text-xl font-black text-red-400">{stats.booked}</div>
+                  <div className="text-[10px] text-accent/60">نشط</div>
+                  <div className="text-xl font-black text-accent">{stats.booked}</div>
                 </div>
               </div>
 
@@ -153,10 +142,10 @@ export default function BookingsPanel({ onClose }) {
                       const isBooked = s.status === 'booked'
                       return (
                         <motion.div key={s.id} layout initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-                          className={`glass rounded-2xl p-3 flex items-center gap-3 ${isBooked ? 'border border-red-500/20' : 'border border-white/[0.06]'}`}>
+                          className={`glass rounded-2xl p-3 flex items-center gap-3 ${isBooked ? 'border border-accent/20 bg-accent/[0.02]' : 'border border-white/[0.06]'}`}>
                           <motion.div
-                            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isBooked ? 'bg-red-500' : 'bg-green-400'}`}
-                            animate={isBooked ? { boxShadow: ['0 0 4px #ef4444', '0 0 14px #ef4444', '0 0 4px #ef4444'] } : {}}
+                            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isBooked ? 'bg-accent' : 'bg-white/30'}`}
+                            animate={isBooked ? { boxShadow: ['0 0 4px #E0FF00', '0 0 14px #E0FF00', '0 0 4px #E0FF00'] } : {}}
                             transition={{ duration: 1.8, repeat: Infinity }}
                           />
                           <div className="flex-1 min-w-0">
@@ -164,7 +153,7 @@ export default function BookingsPanel({ onClose }) {
                               <span className="font-bold text-sm text-white">{s.time || '—'}</span>
                               <span className="text-[10px] text-white/40">·</span>
                               <span className="text-[10px] text-white/40">{s.date}</span>
-                              {isBooked && <span className="text-[9px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-md font-bold">محجوز</span>}
+                              {isBooked && <span className="text-[9px] bg-accent/15 text-accent px-1.5 py-0.5 rounded-md font-bold">محجوز</span>}
                             </div>
                             {isBooked && s.name && (
                               <div className="text-xs text-white/70 font-ar font-bold mt-0.5 flex items-center gap-1.5 truncate">
@@ -175,10 +164,6 @@ export default function BookingsPanel({ onClose }) {
                             )}
                           </div>
                           <div className="flex gap-1.5 flex-shrink-0">
-                            <motion.button whileTap={{ scale: 0.88 }} onClick={() => handleToggle(s.id)}
-                              className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${isBooked ? 'bg-red-500/15 text-red-400' : 'bg-green-500/15 text-green-400'}`}>
-                              {isBooked ? 'إلغاء' : 'احجز'}
-                            </motion.button>
                             <motion.button whileTap={{ scale: 0.88 }} onClick={() => handleDelete(s.id)}
                               className="w-7 h-7 rounded-xl bg-white/[0.03] hover:bg-red-500/15 hover:text-red-400 flex items-center justify-center text-white/30">
                               <Trash2 size={12} />
