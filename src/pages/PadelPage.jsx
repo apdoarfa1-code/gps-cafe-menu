@@ -90,7 +90,7 @@ export default function PadelPage() {
   const { t, i18n } = useTranslation()
   const lng = i18n.language
   const isRTL = lng === 'ar'
-  const { getBookedForDate, bookSlot } = useSlotBookings()
+const { getBookedForDate, bookSlot, slots, version } = useSlotBookings()
   const [name, setName] = useState('')
   const [hours, setHours] = useState(1)
   const [day, setDay] = useState('')
@@ -98,11 +98,14 @@ export default function PadelPage() {
   const [openWhich, setOpenWhich] = useState(null)
   const toggle = (k) => setOpenWhich(openWhich === k ? null : k)
 
-  // Get booked hours for the selected day (type: padel)
-  const bookedHours = day
-    ? getBookedForDate(day, 'padel').map(s => s.time).filter(Boolean)
-    : []
-  // Filter available hours — booked ones hidden completely
+  // Refresh hourly avail with slots list so we rederive every time a booking is made
+  const bookedHours = (() => {
+    if (!day) return []
+    return slots
+      .filter(s => s.status === 'booked' && s.date === day && s.type === 'padel')
+      .map(s => s.time)
+      .filter(Boolean)
+  })()
   const availableHours = HOURS.filter(h => !bookedHours.includes(h))
   const isHourBooked = hour && bookedHours.includes(hour)
   const wts = padelWhatsApp({ name, hours, day, hour })
@@ -204,13 +207,15 @@ export default function PadelPage() {
                 className="glass rounded-2xl py-3.5 flex items-center justify-center gap-2 font-semibold text-[15px] text-white/80 hover:text-accent transition-colors">
                 📞 {t('call')}
               </motion.a>
-              <motion.button onClick={() => {
-                  if (name && day && hour && !isHourBooked) bookSlot(day, hour, 'padel', name)
+              <motion.button onClick={async () => {
+                  if (!name || !day || !hour || isHourBooked) return
+                  try { await bookSlot(day, hour, 'padel', name) } catch {}
+                  setHour('')
                   window.open(wts, '_blank', 'noopener')
                 }}
                 whileHover={{ scale: isHourBooked ? 1 : 1.02, y: isHourBooked ? 0 : -2 }} whileTap={{ scale: isHourBooked ? 1 : 0.97 }}
                 disabled={!name || !day || !hour || isHourBooked}
-                className={`rounded-2xl py-3.5 flex items-center justify-center gap-2 font-semibold text-[15px] transition-all ${isHourBooked ? 'cursor-not-allowed bg-lock bg-white/[0.04] text-white/30 border border-white/10' : 'text-white'}`}
+                className={`rounded-2xl py-3.5 flex items-center justify-center gap-2 font-semibold text-[15px] transition-all ${isHourBooked ? 'cursor-not-allowed bg-white/[0.04] text-white/30 border border-white/10' : 'text-white'}`}
                 style={isHourBooked ? {} : { background: 'linear-gradient(135deg,#22c55e,#16a34a)', boxShadow: '0 8px 24px -4px rgba(34,197,94,0.4)' }}>
                 {isHourBooked ? '🔒 محجوز' : `💬 ${t('whatsapp')}`}
               </motion.button>
