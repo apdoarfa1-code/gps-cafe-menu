@@ -109,12 +109,14 @@ export default function PadelPage() {
 
   return (
     <div className="relative min-h-screen bg-black overflow-hidden">
-      {/* Animated background (replaces missing padel.mp4) */}
-      <AnimatedBg variant="padel" />
-      {/* Optional video fallback if file is later added */}
-      <video src="/assets/videos/padel.mp4" autoPlay muted loop playsInline
-        className="absolute inset-0 w-full h-full object-cover opacity-30 hidden"
-        onError={e => (e.target.style.display = 'none')} />
+      {/* Animated fallback (visible only while video loads or fails) */}
+      <AnimatedBg variant="padel" className="z-0" />
+      {/* Background video (full-screen) */}
+      <video src="/assets/videos/padel.mp4" autoPlay muted loop playsInline preload="auto"
+        className="fixed inset-0 w-full h-full object-cover z-[1]"
+        onError={e => (e.currentTarget.style.display = 'none')} />
+      {/* Subtle dark overlay so UI text stays readable */}
+      <div className="fixed inset-0 bg-gradient-to-b from-black/40 via-black/65 to-black/92 pointer-events-none z-[2]" />
       <div className="absolute inset-0 opacity-25 bg-[radial-gradient(ellipse_at_top,rgba(82,255,168,0.35)_0%,transparent_60%)]" />
       <AnimatedGridPattern dotColor="#52ffa8" dotSize={1.2} className="opacity-30" />
       <FloatingOrbs count={4} />
