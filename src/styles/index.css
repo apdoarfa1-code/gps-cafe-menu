@@ -46,9 +46,11 @@ html, body { scrollbar-width: thin; scrollbar-color: rgba(214,255,0,0.4) transpa
 .glow-cursor, .glow-cursor-dot {
   position: fixed; top: 0; left: 0;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 2147483647;
   transform: translate(-50%, -50%);
   transition: width .25s ease, height .25s ease, opacity .2s, background .3s;
+  will-change: transform, width, height;
+  isolation: isolate;
 }
 .glow-cursor {
   width: 32px; height: 32px;
@@ -61,7 +63,21 @@ html, body { scrollbar-width: thin; scrollbar-color: rgba(214,255,0,0.4) transpa
   width: 6px; height: 6px;
   background: #fff;
   box-shadow: 0 0 12px rgba(214,255,0,0.9);
-  z-index: 10000;
+  z-index: 2147483647;
+}
+.glow-cursor-trail {
+  position: fixed;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214,255,0,0.7), transparent 70%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2147483646;
+  animation: cursor-trail-fade 0.65s ease-out forwards;
+}
+@keyframes cursor-trail-fade {
+  0%   { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0;    transform: translate(-50%, -50%) scale(0.2); }
 }
 .glow-cursor.is-hovering { width: 56px; height: 56px; background: radial-gradient(circle, rgba(214,255,0,0.35), transparent 70%); }
 @media (hover: none), (pointer: coarse) { .glow-cursor, .glow-cursor-dot { display: none; } body { cursor: auto; } }

@@ -5,7 +5,7 @@ import { LogOut, Boxes, Tag, Activity, RefreshCw, Database, FileText, Sparkles, 
 import { useMenuData } from '../hooks/useMenuData.js'
 import { hasSupabase } from '../lib/supabase.js'
 import AnimatedBackground from '../components/AnimatedBackground.jsx'
-import { ShineBorder, Meteors, AnimatedGridPattern } from '../components/magicui/index.js'
+import { ShineBorder, Sparkles as MagicSparkles, FloatingOrbs, AnimatedGridPattern } from '../components/magicui/index.js'
 import SectionsPanel from '../components/admin/SectionsPanel.jsx'
 import ItemsPanel from '../components/admin/ItemsPanel.jsx'
 import BookingsPanel from '../components/admin/BookingsPanel.jsx'
@@ -116,7 +116,8 @@ export default function AdminDashboard() {
     <div className="relative min-h-screen bg-bg noise-overlay overflow-x-hidden">
       <AnimatedBackground />
       <AnimatedGridPattern dotColor="#E0FF00" dotSize={1} className="opacity-20" />
-      <Meteors number={3} />
+      <FloatingOrbs count={3} />
+      <MagicSparkles count={10} />
 
       <div className="relative z-10 max-w-6xl mx-auto p-4 md:p-8">
         {/* Header */}

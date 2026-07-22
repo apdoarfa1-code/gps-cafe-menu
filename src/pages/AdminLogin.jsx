@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Lock, ArrowLeft, X } from 'lucide-react'
-import { ShineBorder, Meteors } from '../components/magicui/index.js'
+import { ShineBorder, Sparkles, FloatingOrbs } from '../components/magicui/index.js'
 
 const ADMIN_CODE = '2026'
 
@@ -35,7 +35,8 @@ export default function AdminLogin() {
   return (
     <div className="relative min-h-screen bg-bg noise-overlay overflow-hidden flex flex-col items-center justify-center px-5">
       <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_center,rgba(214,255,0,0.2)_0%,transparent_60%)]" />
-      <Meteors number={5} />
+      <FloatingOrbs count={3} />
+      <Sparkles count={12} />
 
       <button onClick={() => nav('/home')}
         className="absolute top-5 right-5 w-9 h-9 rounded-full glass flex items-center justify-center text-white/60 hover:text-accent transition-colors">

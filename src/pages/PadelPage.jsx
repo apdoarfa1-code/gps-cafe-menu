@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Minus, Plus, Clock, User, Trophy, Calendar, ChevronDown, Ban } from 'lucide-react'
 import { telLink, padelWhatsApp } from '../lib/whatsapp.js'
 import { useSlotBookings } from '../hooks/useSlotBookings.jsx'
-import { ShineBorder, Meteors, AnimatedGridPattern } from '../components/magicui/index.js'
+import { ShineBorder, FloatingOrbs, Sparkles, AnimatedGridPattern } from '../components/magicui/index.js'
+import AnimatedBg from '../components/AnimatedBg.jsx'
 
 const DAYS = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة']
 const HOURS = Array.from({ length: 12 }, (_, i) => `${i+1}:00 ${i+1 < 12 ? 'م' : 'ص'}`)
@@ -108,16 +109,16 @@ export default function PadelPage() {
 
   return (
     <div className="relative min-h-screen bg-black overflow-hidden">
-      {/* Backgrounds */}
-      <div className="absolute inset-0 z-0">
-        <video src="/assets/videos/padel.mp4" autoPlay muted loop playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-35"
-          onError={e => (e.target.style.display = 'none')} />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/60 to-black/95" />
-      </div>
+      {/* Animated background (replaces missing padel.mp4) */}
+      <AnimatedBg variant="padel" />
+      {/* Optional video fallback if file is later added */}
+      <video src="/assets/videos/padel.mp4" autoPlay muted loop playsInline
+        className="absolute inset-0 w-full h-full object-cover opacity-30 hidden"
+        onError={e => (e.target.style.display = 'none')} />
       <div className="absolute inset-0 opacity-25 bg-[radial-gradient(ellipse_at_top,rgba(82,255,168,0.35)_0%,transparent_60%)]" />
       <AnimatedGridPattern dotColor="#52ffa8" dotSize={1.2} className="opacity-30" />
-      <Meteors number={6} />
+      <FloatingOrbs count={4} />
+      <Sparkles count={12} />
       <motion.div className="absolute top-1/3 -right-20 w-72 h-72 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(82,255,168,0.15), transparent 70%)' }}
         animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
