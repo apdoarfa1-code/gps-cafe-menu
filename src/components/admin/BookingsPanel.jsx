@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, Clock, User, Phone, CheckCircle, Ban, Activity } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, Clock, User, Phone, CheckCircle, Activity } from 'lucide-react'
 import { useSlotBookings } from '../../hooks/useSlotBookings.jsx'
 import { hasSupabase, upsertSlot, deleteSlot as sbDeleteSlot } from '../../lib/supabase.js'
 
@@ -20,12 +20,11 @@ export default function BookingsPanel({ onClose }) {
   const [msg, setMsg] = useState('')
 
   const filtered = slots
-    .filter(s => s.type === tab)
+    .filter(s => s.status === 'booked' && s.type === tab)
     .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.time || '').localeCompare(b.time || ''))
 
   const stats = {
     total: filtered.length,
-    booked: filtered.filter(s => s.status === 'booked').length,
   }
 
   const handleAdd = async () => {
@@ -119,15 +118,9 @@ export default function BookingsPanel({ onClose }) {
           ) : (
             <>
               {/* Stats mini */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="glass rounded-2xl p-3 text-center">
-                  <div className="text-[10px] text-white/50">إجمالي الحجوزات</div>
-                  <div className="text-xl font-black text-white">{stats.total}</div>
-                </div>
-                <div className="glass rounded-2xl p-3 text-center">
-                  <div className="text-[10px] text-accent/60">نشط</div>
-                  <div className="text-xl font-black text-accent">{stats.booked}</div>
-                </div>
+              <div className="glass rounded-2xl p-3 text-center mb-3">
+                <div className="text-[10px] text-white/50">إجمالي الحجوزات</div>
+                <div className="text-xl font-black text-white">{stats.total}</div>
               </div>
 
               {filtered.length === 0 ? (

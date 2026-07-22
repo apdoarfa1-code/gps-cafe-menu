@@ -1,5 +1,5 @@
-const PHONE = '01029913210'
-const WHATSAPP_NUMBER = '201029913210'
+const PHONE = '01112871117'
+const WHATSAPP_NUMBER = '201070278536'
 
 export function telLink() {
   return `tel:+${PHONE}`

@@ -100,9 +100,8 @@ export function useSlotBookings() {
   }, [refresh])
 
   const commit = useCallback((updated) => {
-    const cleaned = cleanExpiredSlots(updated)
-    setSlots(cleaned)
-    saveStored(cleaned)
+    setSlots(updated)
+    saveStored(updated)
     broadcastChange()
   }, [])
 
